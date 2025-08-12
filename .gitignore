@@ -1,0 +1,195 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDEs and editors
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio captures
+captures/
+
+# External native build
+.externalNativeBuild
+
+# NDK
+obj/
+
+# Google Services (avoid uploading credentials)
+google-services.json
+
+# IntelliJ
+out/
+
+# Kotlin specific
+*.kotlin_metadata
+*.kotlin_module
+*.kotlin_builtins
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDEs and editors
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio captures
+captures/
+
+# External native build
+.externalNativeBuild
+
+# NDK
+obj/
+
+# Google Services (avoid uploading credentials)
+google-services.json
+
+# IntelliJ
+out/
+
+# Kotlin specific
+*.kotlin_metadata
+*.kotlin_module
+*.kotlin_builtins
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDEs and editors
+.idea/
+*.iml
+*.ipr
+*.iws
+*.sublime-workspace
+*.sublime-project
+
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio captures
+captures/
+
+# External native build
+.externalNativeBuild
+
+# NDK
+obj/
+
+# Google Services (avoid uploading credentials)
+google-services.json
+
+# IntelliJ
+out/
+
+# Kotlin specific
+*.kotlin_metadata
+*.kotlin_module
+*.kotlin_builtins
+
+# Crashlytics and Firebase
+fabric.properties
+crashlytics.properties
+crashlytics-build.properties
+
+# Android Profiling
+*.hprof
+
+# Misc
+.DS_Store
+Thumbs.db
