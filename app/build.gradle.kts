@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -29,14 +30,24 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
 }
 
 dependencies {
-
+    // Dependencias principales
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+
+    // Nuevas dependencias para tu proyecto
+    implementation("com.android.volley:volley:1.2.1")  // Para conexión HTTP
+    implementation("de.hdodenhof:circleimageview:3.1.0")
+    implementation(libs.core.ktx) // Para imágenes redondeadas
+
+    // Dependencias de prueba
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
