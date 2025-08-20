@@ -1,97 +1,86 @@
 package com.example.androidapp.activities;
-import static android.content.Context.MODE_PRIVATE;
 
-import static androidx.core.content.ContextCompat.startActivity;
+import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.android.volley.Request;
-import com.android.volley.toolbox.StringRequest;
 import com.example.androidapp.R;
-import com.example.androidapp.activities.MainActivity;
-import com.example.androidapp.network.VolleySingleton;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.nio.charset.StandardCharsets;
+import com.example.androidapp.database.DatabaseHelper;
 
 public class RegisterActivity extends AppCompatActivity {
 
+    private static final String TAG = "RegisterActivity";
     private EditText etNombre, etEmail, etPassword;
+    private DatabaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_register);
 
+        // Inicializar base de datos
+        dbHelper = new DatabaseHelper(this);
+
+        // Inicializar vistas
         etNombre = findViewById(R.id.etNombre);
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         Button btnRegister = findViewById(R.id.btnRegister);
+        TextView tvLogin = findViewById(R.id.tvLogin); // 🔹 Agregado para volver a Login
 
+        // Listeners
         btnRegister.setOnClickListener(v -> registerUser());
+        tvLogin.setOnClickListener(v -> finish()); // 🔹 Volver a Login (cierra RegisterActivity)
     }
 
     private void registerUser() {
-        String url = "http://192.168.1.144/app_android/registro.php";
-        StringRequest request = new StringRequest(Request.Method.POST, url,
-                response -> {
-                    try {
-                        JSONObject jsonResponse = new JSONObject(response);
-                        String status = jsonResponse.getString("status");
+        String nombre = etNombre.getText().toString().trim();
+        String email = etEmail.getText().toString().trim();
+        String password = etPassword.getText().toString().trim();
 
-                        if (status.equals("success")) {
-                            int userId = jsonResponse.getInt("user_id");
-                            String nombre = jsonResponse.getString("nombre");
+        if (nombre.isEmpty() || email.isEmpty() || password.isEmpty()) {
+            showToast("Todos los campos son obligatorios");
+            return;
+        }
 
-                            // Guardar en SharedPreferences
-                            SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-                            prefs.edit()
-                                    .putInt("user_id", userId)
-                                    .putString("nombre", nombre)
-                                    .apply();
+        long userId = dbHelper.addUser(nombre, email, password);
 
-                            Toast.makeText(RegisterActivity.this, "Registro exitoso", Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(RegisterActivity.this, MainActivity.class));
-                            finish();
-                        } else {
-                            String errorMsg = jsonResponse.getString("message");
-                            Toast.makeText(RegisterActivity.this, errorMsg, Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Toast.makeText(RegisterActivity.this, "Error en formato de respuesta", Toast.LENGTH_SHORT).show();
-                    }
-                },
-                error -> Toast.makeText(RegisterActivity.this, "Error de conexión: " + error.getMessage(), Toast.LENGTH_SHORT).show()
-        ) {
-            @Override
-            public byte[] getBody() {
-                JSONObject jsonBody = new JSONObject();
-                try {
-                    jsonBody.put("nombre", etNombre.getText().toString());
-                    jsonBody.put("email", etEmail.getText().toString());
-                    jsonBody.put("password", etPassword.getText().toString());
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                return jsonBody.toString().getBytes(StandardCharsets.UTF_8);
-            }
+        if (userId != -1) {
+            saveUserSession((int) userId, nombre);
+            showToast("Registro exitoso");
+            startActivity(new Intent(RegisterActivity.this, MainActivity.class));
+            finish();
+        } else {
+            showToast("Error al registrar usuario (¿email ya existe?)");
+        }
+    }
 
-            @Override
-            public String getBodyContentType() {
-                return "application/json; charset=utf-8";
-            }
-        };
+    private void saveUserSession(int userId, String name) {
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        prefs.edit()
+                .putInt("user_id", userId)
+                .putString("nombre", name)
+                .putBoolean("is_logged_in", true) // 🔹 coherencia con LoginActivity
+                .apply();
+        Log.d(TAG, "Usuario registrado y sesión iniciada: " + name);
+    }
 
-        VolleySingleton.getInstance(this).getRequestQueue().add(request);
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        dbHelper.close();
+        super.onDestroy();
     }
 }

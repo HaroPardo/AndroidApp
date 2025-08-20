@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -28,9 +29,11 @@ import com.example.androidapp.database.DatabaseHelper;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
-public class ReportActivity extends AppCompatActivity {
+public class AddReportActivity extends AppCompatActivity {
+    private static final int MAX_IMAGES = 4;
 
     private static final String TAG = "ReportActivity";
     private RatingBar ratingBar;
@@ -40,6 +43,8 @@ public class ReportActivity extends AppCompatActivity {
     private ArrayList<Bitmap> imagenes = new ArrayList<>();
     private DatabaseHelper dbHelper;
 
+    private TextView tvImageCounter;
+
     // Códigos para manejo de permisos y cámara
     private static final int PERMISSION_REQUEST_CODE = 200;
     private static final int CAMERA_REQUEST_CODE = 100;
@@ -47,7 +52,8 @@ public class ReportActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_report);
+        setContentView(R.layout.activity_add_report);
+
 
         // Inicializar base de datos
         dbHelper = new DatabaseHelper(this);
@@ -59,6 +65,8 @@ public class ReportActivity extends AppCompatActivity {
         btnTomarFoto = findViewById(R.id.btnTomarFoto);
         btnEnviar = findViewById(R.id.btnEnviar);
         imageContainer = findViewById(R.id.imageContainer);
+        tvImageCounter = findViewById(R.id.tvImageCounter);
+        updateImageCounter();
 
         // Configurar listeners
         btnTomarFoto.setOnClickListener(new View.OnClickListener() {
@@ -139,6 +147,10 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     private void abrirCamara() {
+        if (imagenes.size() >= MAX_IMAGES) {
+            showToast("Máximo " + MAX_IMAGES + " imágenes permitidas");
+            return;
+        }
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (intent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(intent, CAMERA_REQUEST_CODE);
@@ -146,11 +158,28 @@ public class ReportActivity extends AppCompatActivity {
             showToast("No se encontró una aplicación de cámara");
         }
     }
+    private void updateImageCounter() {
+        String counterText = imagenes.size() + "/4 imágenes";
+        tvImageCounter.setText(counterText);
+
+        if (imagenes.size() >= 4) {
+            tvImageCounter.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
+            btnTomarFoto.setEnabled(false);
+        } else {
+            tvImageCounter.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+            btnTomarFoto.setEnabled(true);
+        }
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == CAMERA_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+        if (requestCode == AddReportActivity.CAMERA_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
+            if (imagenes.size() >= MAX_IMAGES) {
+                showToast("Máximo " + MAX_IMAGES + " imágenes permitidas");
+                return;
+            }
             Bundle extras = data.getExtras();
             if (extras != null) {
                 Bitmap image = (Bitmap) extras.get("data");
@@ -166,13 +195,24 @@ public class ReportActivity extends AppCompatActivity {
         ImageView imageView = new ImageView(this);
         imageView.setImageBitmap(image);
         imageView.setLayoutParams(new LinearLayout.LayoutParams(200, 200));
+
+        // Agregar funcionalidad para eliminar imagen
+        imageView.setOnClickListener(v -> {
+            int position = imageContainer.indexOfChild(v);
+            if (position != -1) {
+                imagenes.remove(position);
+                imageContainer.removeViewAt(position);
+                updateImageCounter();
+            }
+        });
+
         imageContainer.addView(imageView);
+        updateImageCounter();
     }
 
     private void enviarReporte() {
         if (!validarFormulario()) return;
 
-        // Obtener datos del formulario
         String lugar = etLugar.getText().toString().trim();
         String explicacion = etExplicacion.getText().toString().trim();
         int calificacion = (int) ratingBar.getRating();
@@ -181,11 +221,15 @@ public class ReportActivity extends AppCompatActivity {
         // Guardar imágenes y obtener rutas
         StringBuilder imagePaths = new StringBuilder();
         for (int i = 0; i < imagenes.size(); i++) {
+            Bitmap image = imagenes.get(i);
             String fileName = "report_" + System.currentTimeMillis() + "_" + i + ".jpg";
-            String path = guardarImagen(imagenes.get(i), fileName);
+            String path = guardarImagen(image, fileName);
 
             if (path != null) {
-                imagePaths.append(path).append(",");
+                if (imagePaths.length() > 0) {
+                    imagePaths.append(",");
+                }
+                imagePaths.append(path);
             }
         }
 
@@ -194,17 +238,13 @@ public class ReportActivity extends AppCompatActivity {
             return;
         }
 
-        // Quitar la última coma
-        String rutasImagenes = imagePaths.substring(0, imagePaths.length() - 1);
-
         // Guardar reporte en base de datos local
-        long reportId = dbHelper.addReport(userId, lugar, calificacion, explicacion, rutasImagenes);
-
+        long reportId = dbHelper.addReport(userId, lugar, calificacion, explicacion, imagePaths.toString());
         if (reportId != -1) {
             showToast("Reporte guardado localmente");
             finish();
         } else {
-            showToast("Error al guardar reporte");
+            showToast("Error al guardar. Verifique logs.");
         }
     }
 
@@ -236,17 +276,27 @@ public class ReportActivity extends AppCompatActivity {
     }
 
     private String guardarImagen(Bitmap bitmap, String fileName) {
+        FileOutputStream fos = null;
         try {
-            // Crear archivo en almacenamiento interno
             File file = new File(getFilesDir(), fileName);
-            FileOutputStream fos = new FileOutputStream(file);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, fos);
+            fos = new FileOutputStream(file);
+
+            // Comprimir la imagen con calidad del 70%
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, fos);
             fos.flush();
-            fos.close();
+
             return file.getAbsolutePath();
         } catch (Exception e) {
             Log.e(TAG, "Error guardando imagen", e);
             return null;
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    Log.e(TAG, "Error cerrando stream", e);
+                }
+            }
         }
     }
 
