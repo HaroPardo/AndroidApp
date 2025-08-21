@@ -195,7 +195,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         try {
             return db.query(TABLE_REPORTS,
-                    null,
+                    null, // Todas las columnas
                     COLUMN_REPORT_ID + " = ?",
                     new String[]{String.valueOf(reportId)},
                     null, null, null);
@@ -233,12 +233,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.query(TABLE_REMINDERS,
                 new String[]{
-                        COLUMN_REMINDER_ID,
+                        COLUMN_REMINDER_ID + " AS _id", // ✅ Añadir alias requerido
                         COLUMN_TITLE,
-                        COLUMN_LATITUDE,
-                        COLUMN_LONGITUDE,
-                        COLUMN_RADIUS,
-                        COLUMN_IMAGE_PATH,
                         COLUMN_CREATED_AT
                 },
                 COLUMN_REMINDER_USER_FK + " = ?",

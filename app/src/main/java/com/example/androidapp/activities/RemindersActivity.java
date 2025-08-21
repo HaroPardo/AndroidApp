@@ -5,12 +5,14 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -42,35 +44,55 @@ public class RemindersActivity extends AppCompatActivity {
     }
 
     private void loadReminders() {
-        Cursor cursor = dbHelper.getUserReminders(userId);
+        Cursor cursor = null;
+        try {
+            cursor = dbHelper.getUserReminders(userId);
 
-        String[] fromColumns = {
-                DatabaseHelper.COLUMN_TITLE,
-                DatabaseHelper.COLUMN_CREATED_AT
-        };
+            if (cursor == null || cursor.getCount() == 0) {
+                // Mostrar mensaje de lista vacía
+                findViewById(R.id.tvEmpty).setVisibility(View.VISIBLE);
+                remindersList.setAdapter(null);
+                return;
+            } else {
+                findViewById(R.id.tvEmpty).setVisibility(View.GONE);
+            }
 
-        int[] toViews = {
-                R.id.tvReminderTitle,
-                R.id.tvReminderDate
-        };
+            String[] fromColumns = {
+                    DatabaseHelper.COLUMN_TITLE,
+                    DatabaseHelper.COLUMN_CREATED_AT
+            };
 
-        SimpleCursorAdapter adapter = new SimpleCursorAdapter(
-                this,
-                R.layout.reminder_list_item,
-                cursor,
-                fromColumns,
-                toViews,
-                0
-        );
+            int[] toViews = {
+                    R.id.tvReminderTitle,
+                    R.id.tvReminderDate
+            };
 
-        remindersList.setAdapter(adapter);
+            SimpleCursorAdapter adapter = new SimpleCursorAdapter(
+                    this,
+                    R.layout.reminder_list_item,
+                    cursor,
+                    fromColumns,
+                    toViews,
+                    0
+            );
 
-        remindersList.setOnItemClickListener((parent, view, position, id) -> {
-            Intent intent = new Intent(RemindersActivity.this, ReminderDetailActivity.class);
-            intent.putExtra("reminder_id", id);
-            startActivity(intent);
-        });
+            remindersList.setAdapter(adapter);
+
+            remindersList.setOnItemClickListener((parent, view, position, id) -> {
+                Intent intent = new Intent(RemindersActivity.this, ReminderDetailActivity.class);
+                intent.putExtra("reminder_id", id);
+                startActivity(intent);
+            });
+
+        } catch (Exception e) {
+            Log.e("RemindersActivity", "Error loading reminders", e);
+            Toast.makeText(this, "Error al cargar recordatorios", Toast.LENGTH_SHORT).show();
+        } finally {
+            // No cerramos el cursor aquí porque el adapter lo necesita
+            // El adapter se encargará de manejarlo.
+        }
     }
+
 
     private int getUserId() {
         SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);

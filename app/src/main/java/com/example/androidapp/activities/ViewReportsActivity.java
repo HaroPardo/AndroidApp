@@ -23,8 +23,7 @@ public class ViewReportsActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
     private ListView reportsList;
     private TextView tvEmpty;
-
-    private Cursor cursor; // 🔹 Ahora mantenemos el cursor como campo
+    private Cursor cursor; // Mantener referencia al cursor
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,45 +40,66 @@ public class ViewReportsActivity extends AppCompatActivity {
         });
 
         loadReports();
+
+        // Configurar el listener para clics en elementos de la lista
+        reportsList.setOnItemClickListener((parent, view, position, id) -> {
+            // Abrir actividad de detalles con el ID del reporte
+            Intent intent = new Intent(ViewReportsActivity.this, ReportDetailActivity.class);
+            intent.putExtra("REPORT_ID", id);
+            startActivity(intent);
+        });
     }
 
     private void loadReports() {
         int userId = getUserId();
-        Log.d("ViewReports", "Usuario ID: " + userId);
+        Log.d("ViewReports", "Cargando reportes para usuario: " + userId);
 
-        // 🔹 Cerrar cursor anterior si existe
+        // Cerrar cursor anterior si existe
         if (cursor != null && !cursor.isClosed()) {
             cursor.close();
         }
 
         cursor = dbHelper.getUserReports(userId);
 
-        if (cursor == null) {
-            Log.e("ViewReports", "Cursor es null");
-            tvEmpty.setText("Error al cargar reportes");
+        if (cursor == null || cursor.getCount() == 0) {
             tvEmpty.setVisibility(View.VISIBLE);
             reportsList.setVisibility(View.GONE);
             return;
         }
 
-        Log.d("ViewReports", "Número de reportes: " + cursor.getCount());
+        tvEmpty.setVisibility(View.GONE);
+        reportsList.setVisibility(View.VISIBLE);
 
-        if (cursor.getCount() == 0) {
-            tvEmpty.setVisibility(View.VISIBLE);
-            reportsList.setVisibility(View.GONE);
-            return;
-        }
-
-        // 🔹 Verificar columnas del cursor
-        String[] columns = cursor.getColumnNames();
-        Log.d("ViewReports", "Columnas: " + Arrays.toString(columns));
-
-        String[] fromColumns = { DatabaseHelper.COLUMN_PLACE, DatabaseHelper.COLUMN_RATING };
-        int[] toViews = { R.id.tvReportPlace, R.id.tvReportRating };
+        String[] fromColumns = {
+                DatabaseHelper.COLUMN_PLACE,
+                DatabaseHelper.COLUMN_RATING
+        };
+        int[] toViews = {
+                R.id.tvReportPlace,
+                R.id.tvReportRating
+        };
 
         SimpleCursorAdapter adapter = new SimpleCursorAdapter(
-                this, R.layout.report_list_item, cursor, fromColumns, toViews, 0
-        );
+                this,
+                R.layout.report_list_item,
+                cursor,
+                fromColumns,
+                toViews,
+                0
+        ) {
+            // Personalizar cómo se muestran los datos
+            @Override
+            public void setViewText(TextView v, String text) {
+                if (v.getId() == R.id.tvReportRating) {
+                    // Convertir el número de rating a estrellas
+                    int rating = Integer.parseInt(text);
+                    v.setText(getRatingStars(rating));
+                } else {
+                    super.setViewText(v, text);
+                }
+            }
+        };
+
         reportsList.setAdapter(adapter);
     }
 
@@ -100,15 +120,10 @@ public class ViewReportsActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        loadReports(); // 🔄 Recargar reportes al volver
-    }
-
-    @Override
     protected void onDestroy() {
+        // Cerrar el cursor cuando la actividad se destruye
         if (cursor != null && !cursor.isClosed()) {
-            cursor.close(); // ✅ Cerrar cursor al destruir la actividad
+            cursor.close();
         }
         dbHelper.close();
         super.onDestroy();
