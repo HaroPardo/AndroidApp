@@ -45,13 +45,16 @@ dependencies {
     // Nuevas dependencias para tu proyecto
     implementation("com.android.volley:volley:1.2.1")  // Para conexión HTTP
     implementation("de.hdodenhof:circleimageview:3.1.0")
-    implementation(libs.core.ktx) // Para imágenes redondeadas
+    implementation(libs.core.ktx)
 
     // Dependencias de prueba
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
+    // Servicios de ubicación (mantén solo location, no maps ya que usas OSMDroid)
     implementation("com.google.android.gms:play-services-location:21.0.1")
-    implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+    // Dependencias de OSMDroid CORREGIDAS
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
 }

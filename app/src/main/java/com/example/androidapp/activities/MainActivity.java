@@ -12,11 +12,32 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.androidapp.R;
 
+import org.osmdroid.config.Configuration;
+
+import java.io.File;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Configurar OSMDroid
+        Configuration.getInstance().setUserAgentValue(getPackageName());
+
+        // Establecer la ruta de caché para los tiles
+        File basePath = new File(getCacheDir(), "osmdroid");
+        if (!basePath.exists()) {
+            basePath.mkdirs();
+        }
+        Configuration.getInstance().setOsmdroidBasePath(basePath);
+
+        File tileCache = new File(basePath, "tiles");
+        if (!tileCache.exists()) {
+            tileCache.mkdirs();
+        }
+        Configuration.getInstance().setOsmdroidTileCache(tileCache);
+
         setContentView(R.layout.activity_main);
 
         Button btnLogout = findViewById(R.id.btnLogout);

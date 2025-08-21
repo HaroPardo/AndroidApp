@@ -4,10 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -15,7 +12,6 @@ import android.widget.RadioGroup;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -23,9 +19,7 @@ import androidx.core.content.ContextCompat;
 import com.example.androidapp.R;
 import com.example.androidapp.database.DatabaseHelper;
 import com.example.androidapp.services.LocationHelper;
-import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 public class AddReminderActivity extends AppCompatActivity {
 
@@ -86,7 +80,6 @@ public class AddReminderActivity extends AppCompatActivity {
         }
     }
 
-
     private void requestLocation() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -94,7 +87,7 @@ public class AddReminderActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this,
                     new String[]{
                             Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                            Manifest.permission.ACCESS_COARSE_LOCATION
                     },
                     REQUEST_LOCATION_PERMISSION);
         } else {
@@ -170,3 +163,4 @@ public class AddReminderActivity extends AppCompatActivity {
         return prefs.getInt("user_id", -1);
     }
 }
+
