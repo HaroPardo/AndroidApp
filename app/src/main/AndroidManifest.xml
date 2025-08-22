@@ -65,6 +65,15 @@
         <meta-data
             android:name="org.osmdroid.config"
             android:resource="@xml/osmdroid_config" />
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.androidapp.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>
