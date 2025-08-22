@@ -14,4 +14,14 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/btnAddReminder"/>
+
+    <TextView
+        android:id="@+id/tvEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="No hay recordatorios"
+        android:visibility="gone"
+        android:gravity="center"/>
+
 </RelativeLayout>

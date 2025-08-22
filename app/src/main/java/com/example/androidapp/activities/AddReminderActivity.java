@@ -119,15 +119,14 @@ public class AddReminderActivity extends AppCompatActivity {
         String description = etDescription.getText().toString().trim();
 
         DatabaseHelper dbHelper = new DatabaseHelper(this);
-        long reminderId = dbHelper.addReminder(userId, title, latitude, longitude, radius, imagePath);
+        long reminderId = dbHelper.addReminder(userId, title, description, latitude, longitude, radius, imagePath);
         dbHelper.close();
 
         if (reminderId != -1) {
             Toast.makeText(this, "Recordatorio creado", Toast.LENGTH_SHORT).show();
 
             // Iniciar monitoreo de ubicación
-            LocationHelper.startLocationMonitoring(this, latitude, longitude, radius, title);
-
+            LocationHelper.startLocationMonitoring(this, reminderId, latitude, longitude, radius, title);
             finish();
         } else {
             Toast.makeText(this, "Error al guardar recordatorio", Toast.LENGTH_SHORT).show();

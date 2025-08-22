@@ -24,6 +24,8 @@ public class RemindersActivity extends AppCompatActivity {
     private DatabaseHelper dbHelper;
     private ListView remindersList;
     private int userId;
+    private SimpleCursorAdapter adapter;
+    private TextView tvEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +37,7 @@ public class RemindersActivity extends AppCompatActivity {
 
         Button btnAddReminder = findViewById(R.id.btnAddReminder);
         remindersList = findViewById(R.id.remindersList);
+        tvEmpty = findViewById(R.id.tvEmpty);
 
         btnAddReminder.setOnClickListener(v -> {
             startActivity(new Intent(RemindersActivity.this, AddReminderActivity.class));
@@ -42,32 +45,25 @@ public class RemindersActivity extends AppCompatActivity {
 
         loadReminders();
     }
+    private int getUserId() {
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        return prefs.getInt("user_id", -1);
+    }
 
     private void loadReminders() {
-        Cursor cursor = null;
-        try {
-            cursor = dbHelper.getUserReminders(userId);
+        Cursor cursor = dbHelper.getUserReminders(userId);
 
-            if (cursor == null || cursor.getCount() == 0) {
-                // Mostrar mensaje de lista vacía
-                findViewById(R.id.tvEmpty).setVisibility(View.VISIBLE);
-                remindersList.setAdapter(null);
-                return;
-            } else {
-                findViewById(R.id.tvEmpty).setVisibility(View.GONE);
-            }
+        if (cursor.getCount() == 0) {
+            tvEmpty.setVisibility(View.VISIBLE);
+            remindersList.setVisibility(View.GONE);
+        } else {
+            tvEmpty.setVisibility(View.GONE);
+            remindersList.setVisibility(View.VISIBLE);
 
-            String[] fromColumns = {
-                    DatabaseHelper.COLUMN_TITLE,
-                    DatabaseHelper.COLUMN_CREATED_AT
-            };
+            String[] fromColumns = {DatabaseHelper.COLUMN_TITLE, DatabaseHelper.COLUMN_CREATED_AT};
+            int[] toViews = {R.id.tvReminderTitle, R.id.tvReminderDate};
 
-            int[] toViews = {
-                    R.id.tvReminderTitle,
-                    R.id.tvReminderDate
-            };
-
-            SimpleCursorAdapter adapter = new SimpleCursorAdapter(
+            adapter = new SimpleCursorAdapter(
                     this,
                     R.layout.reminder_list_item,
                     cursor,
@@ -83,31 +79,15 @@ public class RemindersActivity extends AppCompatActivity {
                 intent.putExtra("reminder_id", id);
                 startActivity(intent);
             });
-
-        } catch (Exception e) {
-            Log.e("RemindersActivity", "Error loading reminders", e);
-            Toast.makeText(this, "Error al cargar recordatorios", Toast.LENGTH_SHORT).show();
-        } finally {
-            // No cerramos el cursor aquí porque el adapter lo necesita
-            // El adapter se encargará de manejarlo.
         }
-    }
-
-
-    private int getUserId() {
-        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
-        return prefs.getInt("user_id", -1);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadReminders();
     }
 
     @Override
     protected void onDestroy() {
-        dbHelper.close();
         super.onDestroy();
+        if (adapter != null) {
+            adapter.getCursor().close();
+        }
+        dbHelper.close();
     }
 }
