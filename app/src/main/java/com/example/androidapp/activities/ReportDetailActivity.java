@@ -2,10 +2,7 @@ package com.example.androidapp.activities;
 
 import android.app.Dialog;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -18,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.androidapp.R;
 import com.example.androidapp.database.DatabaseHelper;
+import com.squareup.picasso.Picasso;
 
 import java.io.File;
 
@@ -82,7 +80,6 @@ public class ReportDetailActivity extends AppCompatActivity {
                 finish();
             }
         } catch (Exception e) {
-            Log.e("ReportDetail", "Error cargando detalles: " + e.getMessage());
             Toast.makeText(this, "Error al cargar detalles", Toast.LENGTH_SHORT).show();
             finish();
         } finally {
@@ -105,31 +102,29 @@ public class ReportDetailActivity extends AppCompatActivity {
             try {
                 File imgFile = new File(path.trim());
                 if (imgFile.exists()) {
-                    // Reducir el tamaño de la imagen para evitar problemas de memoria
-                    BitmapFactory.Options options = new BitmapFactory.Options();
-                    options.inSampleSize = 4; // Reducir tamaño 4 veces
+                    ImageView imageView = new ImageView(this);
+                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                            400, 400
+                    );
+                    params.setMargins(0, 0, 16, 0);
+                    imageView.setLayoutParams(params);
+                    imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
 
-                    Bitmap bitmap = BitmapFactory.decodeFile(imgFile.getAbsolutePath(), options);
-                    if (bitmap != null) {
-                        ImageView imageView = new ImageView(this);
-                        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                                400, 400
-                        );
-                        params.setMargins(0, 0, 16, 0);
-                        imageView.setLayoutParams(params);
-                        imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-                        imageView.setImageBitmap(bitmap);
+                    // Usar Picasso para cargar la imagen con mejor calidad
+                    Picasso.get().load(imgFile)
+                            .resize(400, 400)
+                            .centerCrop()
+                            .into(imageView);
 
-                        // Agregar funcionalidad para ampliar imagen al hacer clic
-                        imageView.setOnClickListener(v -> {
-                            showFullScreenImage(imgFile.getAbsolutePath());
-                        });
+                    // Agregar funcionalidad para ampliar imagen al hacer clic
+                    imageView.setOnClickListener(v -> {
+                        showFullScreenImage(imgFile.getAbsolutePath());
+                    });
 
-                        imageContainer.addView(imageView);
-                    }
+                    imageContainer.addView(imageView);
                 }
             } catch (Exception e) {
-                Log.e("ReportDetail", "Error cargando imagen: " + path, e);
+                e.printStackTrace();
             }
         }
 
@@ -147,14 +142,8 @@ public class ReportDetailActivity extends AppCompatActivity {
         ImageView fullScreenImageView = dialog.findViewById(R.id.fullScreenImageView);
         Button btnClose = dialog.findViewById(R.id.btnClose);
 
-        try {
-            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-            if (bitmap != null) {
-                fullScreenImageView.setImageBitmap(bitmap);
-            }
-        } catch (Exception e) {
-            Log.e("ReportDetail", "Error mostrando imagen completa", e);
-        }
+        // Usar Picasso para cargar la imagen en alta calidad
+        Picasso.get().load(new File(imagePath)).into(fullScreenImageView);
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
