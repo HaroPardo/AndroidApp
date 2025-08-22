@@ -13,7 +13,7 @@ import com.example.androidapp.models.User;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "app_database.db";
-    private static final int DATABASE_VERSION = 3; // versión con users, reports, reminders
+    private static final int DATABASE_VERSION = 4; // versión con users, reports, reminders
 
     // Tabla de usuarios
     public static final String TABLE_USERS = "users";
@@ -36,6 +36,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_REMINDER_ID = "reminder_id";
     public static final String COLUMN_REMINDER_USER_FK = "user_id";
     public static final String COLUMN_TITLE = "title";
+    public static final String COLUMN_DESCRIPTION = "description";
     public static final String COLUMN_LATITUDE = "latitude";
     public static final String COLUMN_LONGITUDE = "longitude";
     public static final String COLUMN_RADIUS = "radius";
@@ -70,6 +71,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_REMINDER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + COLUMN_REMINDER_USER_FK + " INTEGER NOT NULL,"
                     + COLUMN_TITLE + " TEXT NOT NULL,"
+                    + COLUMN_DESCRIPTION + " TEXT," // Nueva columna
                     + COLUMN_LATITUDE + " REAL NOT NULL,"
                     + COLUMN_LONGITUDE + " REAL NOT NULL,"
                     + COLUMN_RADIUS + " REAL NOT NULL,"
@@ -95,6 +97,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // Migraciones progresivas
@@ -103,6 +106,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
         if (oldVersion < 3) {
             db.execSQL(CREATE_TABLE_REPORTS);
+        }
+        if (oldVersion < 4) {
+            // Agregar columna description a la tabla reminders
+            db.execSQL("ALTER TABLE " + TABLE_REMINDERS + " ADD COLUMN description TEXT");
         }
         Log.d(TAG, "Base de datos actualizada a la versión " + newVersion);
     }
@@ -207,17 +214,19 @@ public class DatabaseHelper extends SQLiteOpenHelper {
 
 
     // ==== CRUD RECORDATORIOS ====
-    public long addReminder(int userId, String title, double latitude, double longitude, float radius, String imagePath) {
+    public long addReminder(int userId, String title, String description, double latitude, double longitude, float radius, String imagePath) {
         SQLiteDatabase db = this.getWritableDatabase();
         long id = -1;
         try {
             ContentValues values = new ContentValues();
             values.put(COLUMN_REMINDER_USER_FK, userId);
             values.put(COLUMN_TITLE, title);
+            values.put(COLUMN_DESCRIPTION, description);
             values.put(COLUMN_LATITUDE, latitude);
             values.put(COLUMN_LONGITUDE, longitude);
             values.put(COLUMN_RADIUS, radius);
             values.put(COLUMN_IMAGE_PATH, imagePath);
+
 
             id = db.insertOrThrow(TABLE_REMINDERS, null, values);
             Log.d(TAG, "Recordatorio agregado con ID: " + id);
@@ -241,5 +250,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 new String[]{String.valueOf(userId)},
                 null, null,
                 COLUMN_CREATED_AT + " DESC");
+    }
+    public Cursor getReminderById(String reminderId) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        try {
+            return db.query(TABLE_REMINDERS,
+                    null, // Todas las columnas
+                    COLUMN_REMINDER_ID + " = ?",
+                    new String[]{reminderId},
+                    null, null, null);
+        } catch (Exception e) {
+            Log.e(TAG, "Error en getReminderById: " + e.getMessage());
+            return null;
+        }
     }
 }

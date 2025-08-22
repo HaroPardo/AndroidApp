@@ -57,4 +57,6 @@ dependencies {
 
     // Dependencias de OSMDroid CORREGIDAS
     implementation("org.osmdroid:osmdroid-android:6.1.18")
+    implementation("com.squareup.picasso:picasso:2.71828")
+    implementation("org.osmdroid:osmdroid-android:6.1.16")
 }

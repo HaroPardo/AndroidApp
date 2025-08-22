@@ -16,11 +16,11 @@ public class LocationHelper {
 
     private static final String TAG = "LocationHelper";
 
-    public static void startLocationMonitoring(Context context, double latitude, double longitude, float radius, String title) {
+    public static void startLocationMonitoring(Context context, long reminderId, double latitude, double longitude, float radius, String title) {
         GeofencingClient geofencingClient = LocationServices.getGeofencingClient(context);
 
         Geofence geofence = new Geofence.Builder()
-                .setRequestId("geo_" + System.currentTimeMillis())
+                .setRequestId("geo_" + reminderId) // opcional: usar el ID como requestId
                 .setCircularRegion(latitude, longitude, radius)
                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
@@ -33,15 +33,22 @@ public class LocationHelper {
 
         Intent intent = new Intent(context, GeofenceBroadcastReceiver.class);
         intent.putExtra("title", title);
+        intent.putExtra("reminder_id", String.valueOf(reminderId)); // 👉 añadimos el ID
+
         PendingIntent geofencePendingIntent = PendingIntent.getBroadcast(
-                context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+                context,
+                (int) reminderId, // requestCode único por recordatorio
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE
+        );
 
         try {
             geofencingClient.addGeofences(geofencingRequest, geofencePendingIntent)
-                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Geofence añadido: " + title))
+                    .addOnSuccessListener(aVoid -> Log.d(TAG, "Geofence añadido: " + title + " (ID: " + reminderId + ")"))
                     .addOnFailureListener(e -> Log.e(TAG, "Error al añadir geofence", e));
         } catch (SecurityException e) {
             Log.e(TAG, "Error de permisos al añadir geofence", e);
         }
     }
 }
+
