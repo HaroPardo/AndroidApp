@@ -1,5 +1,6 @@
 package com.example.androidapp.activities;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -25,6 +26,7 @@ public class ReportDetailActivity extends AppCompatActivity {
     private RatingBar ratingBar;
     private LinearLayout imageContainer;
     private DatabaseHelper dbHelper;
+    private long reportId; // guardamos el ID globalmente
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,13 +41,19 @@ public class ReportDetailActivity extends AppCompatActivity {
         dbHelper = new DatabaseHelper(this);
 
         // Obtener el ID del reporte del Intent
-        long reportId = getIntent().getLongExtra("REPORT_ID", -1);
+        reportId = getIntent().getLongExtra("REPORT_ID", -1);
 
         if (reportId == -1) {
             Toast.makeText(this, "Error: ID de reporte no válido", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+
+        // Configurar botón de eliminar
+        Button btnDelete = findViewById(R.id.btnDeleteReport);
+        btnDelete.setOnClickListener(v -> {
+            showDeleteConfirmationDialog(reportId);
+        });
 
         // Cargar detalles del reporte
         loadReportDetails(reportId);
@@ -147,6 +155,28 @@ public class ReportDetailActivity extends AppCompatActivity {
 
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
+    }
+
+    private void showDeleteConfirmationDialog(long reportId) {
+        new AlertDialog.Builder(this)
+                .setTitle("Eliminar Reporte")
+                .setMessage("¿Estás seguro de que quieres eliminar este reporte?")
+                .setPositiveButton("Eliminar", (dialog, which) -> {
+                    deleteReport(reportId);
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void deleteReport(long reportId) {
+        boolean success = dbHelper.deleteReport(reportId);
+
+        if (success) {
+            Toast.makeText(this, "Reporte eliminado correctamente", Toast.LENGTH_SHORT).show();
+            finish(); // Volver a la actividad anterior
+        } else {
+            Toast.makeText(this, "Error al eliminar el reporte", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

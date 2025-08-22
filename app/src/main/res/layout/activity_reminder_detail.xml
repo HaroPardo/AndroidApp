@@ -79,6 +79,13 @@
                 android:scaleType="centerCrop"
                 android:layout_marginTop="8dp"/>
         </LinearLayout>
-
+        <Button
+            android:id="@+id/btnDeleteReminder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Eliminar Recordatorio"
+            android:backgroundTint="@android:color/holo_red_dark"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="24dp"/>
     </LinearLayout>
 </ScrollView>

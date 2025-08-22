@@ -4,10 +4,13 @@ import android.database.Cursor;
 import android.location.Address;
 import android.location.Geocoder;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.example.androidapp.services.LocationHelper;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.androidapp.R;
@@ -48,6 +51,10 @@ public class ReminderDetailActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        // Configurar botón de eliminar
+        Button btnDelete = findViewById(R.id.btnDeleteReminder);
+        btnDelete.setOnClickListener(v -> showDeleteConfirmationDialog(reminderId));
 
         loadReminderDetails(reminderId);
     }
@@ -133,6 +140,32 @@ public class ReminderDetailActivity extends AppCompatActivity {
         }
     }
 
+    private void showDeleteConfirmationDialog(long reminderId) {
+        new AlertDialog.Builder(this)
+                .setTitle("Eliminar Recordatorio")
+                .setMessage("¿Estás seguro de que quieres eliminar este recordatorio?")
+                .setPositiveButton("Eliminar", (dialog, which) -> deleteReminder(reminderId))
+                .setNegativeButton("Cancelar", null)
+                .show();
+    }
+
+    private void deleteReminder(long reminderId) {
+        DatabaseHelper dbHelper = new DatabaseHelper(this);
+
+        // Eliminar geofence asociado
+        LocationHelper.removeGeofence(this, reminderId);
+
+        boolean success = dbHelper.deleteReminder(reminderId);
+        dbHelper.close();
+
+        if (success) {
+            Toast.makeText(this, "Recordatorio eliminado correctamente", Toast.LENGTH_SHORT).show();
+            finish(); // Volver a la actividad anterior
+        } else {
+            Toast.makeText(this, "Error al eliminar el recordatorio", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -157,3 +190,5 @@ public class ReminderDetailActivity extends AppCompatActivity {
         }
     }
 }
+
+

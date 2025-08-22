@@ -3,16 +3,12 @@ package com.example.androidapp.activities;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -26,6 +22,7 @@ public class RemindersActivity extends AppCompatActivity {
     private int userId;
     private SimpleCursorAdapter adapter;
     private TextView tvEmpty;
+    private Cursor cursor; // Añadir referencia al cursor
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +42,25 @@ public class RemindersActivity extends AppCompatActivity {
 
         loadReminders();
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadReminders(); // Recargar la lista cuando se vuelva a esta actividad
+    }
+
     private int getUserId() {
         SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
         return prefs.getInt("user_id", -1);
     }
 
     private void loadReminders() {
-        Cursor cursor = dbHelper.getUserReminders(userId);
+        // Cerrar cursor anterior si existe
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        cursor = dbHelper.getUserReminders(userId);
 
         if (cursor.getCount() == 0) {
             tvEmpty.setVisibility(View.VISIBLE);
@@ -85,8 +94,9 @@ public class RemindersActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (adapter != null) {
-            adapter.getCursor().close();
+        // Cerrar el cursor cuando la actividad se destruye
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
         }
         dbHelper.close();
     }

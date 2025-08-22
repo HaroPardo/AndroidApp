@@ -264,4 +264,33 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             return null;
         }
     }
+    // Método para eliminar un reporte por ID
+    public boolean deleteReport(long reportId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            int result = db.delete(TABLE_REPORTS, COLUMN_REPORT_ID + " = ?",
+                    new String[]{String.valueOf(reportId)});
+            return result > 0;
+        } catch (Exception e) {
+            Log.e(TAG, "Error al eliminar reporte: " + e.getMessage());
+            return false;
+        } finally {
+            db.close();
+        }
+    }
+
+    // Método para eliminar un recordatorio por ID
+    public boolean deleteReminder(long reminderId) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try {
+            int result = db.delete(TABLE_REMINDERS, COLUMN_REMINDER_ID + " = ?",
+                    new String[]{String.valueOf(reminderId)});
+            return result > 0;
+        } catch (Exception e) {
+            Log.e(TAG, "Error al eliminar recordatorio: " + e.getMessage());
+            return false;
+        } finally {
+            db.close();
+        }
+    }
 }

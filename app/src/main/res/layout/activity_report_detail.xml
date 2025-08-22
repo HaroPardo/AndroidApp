@@ -78,6 +78,14 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"/>
             </HorizontalScrollView>
+            <Button
+                android:id="@+id/btnDeleteReport"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Eliminar Reporte"
+                android:backgroundTint="@android:color/holo_red_dark"
+                android:textColor="@android:color/white"
+                android:layout_marginTop="24dp"/>
         </LinearLayout>
 
     </LinearLayout>

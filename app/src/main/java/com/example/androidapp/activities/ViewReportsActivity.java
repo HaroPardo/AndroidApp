@@ -16,14 +16,13 @@ import com.example.androidapp.R;
 import com.example.androidapp.database.DatabaseHelper;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.util.Arrays;
-
 public class ViewReportsActivity extends AppCompatActivity {
 
     private DatabaseHelper dbHelper;
     private ListView reportsList;
     private TextView tvEmpty;
     private Cursor cursor; // Mantener referencia al cursor
+    private SimpleCursorAdapter adapter; // Añadir referencia al adapter
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +47,12 @@ public class ViewReportsActivity extends AppCompatActivity {
             intent.putExtra("REPORT_ID", id);
             startActivity(intent);
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadReports(); // Recargar la lista cuando se vuelva a esta actividad
     }
 
     private void loadReports() {
@@ -79,7 +84,7 @@ public class ViewReportsActivity extends AppCompatActivity {
                 R.id.tvReportRating
         };
 
-        SimpleCursorAdapter adapter = new SimpleCursorAdapter(
+        adapter = new SimpleCursorAdapter(
                 this,
                 R.layout.report_list_item,
                 cursor,
