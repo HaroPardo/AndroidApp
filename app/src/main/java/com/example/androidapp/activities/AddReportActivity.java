@@ -29,6 +29,13 @@ import androidx.core.content.FileProvider;
 
 import com.example.androidapp.R;
 import com.example.androidapp.database.DatabaseHelper;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
@@ -48,7 +55,6 @@ public class AddReportActivity extends AppCompatActivity {
     private LinearLayout imageContainer;
     private ArrayList<String> imagePaths = new ArrayList<>();
     private DatabaseHelper dbHelper;
-
     private TextView tvImageCounter;
 
     // Códigos para manejo de permisos y cámara
@@ -58,10 +64,29 @@ public class AddReportActivity extends AppCompatActivity {
 
     private String currentPhotoPath;
 
+    // Variables para anuncios
+    private AdView mAdView;
+    private InterstitialAd mInterstitialAd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_report);
+
+        // Inicializar AdMob
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+
+        // Cargar banner
+        mAdView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
+        // Cargar anuncio intersticial
+        loadInterstitialAd();
 
         // Inicializar base de datos
         dbHelper = new DatabaseHelper(this);
@@ -78,7 +103,45 @@ public class AddReportActivity extends AppCompatActivity {
 
         // Configurar listeners
         btnTomarFoto.setOnClickListener(v -> showImagePickerDialog());
-        btnEnviar.setOnClickListener(v -> enviarReporte());
+        btnEnviar.setOnClickListener(v -> {
+            if (validarFormulario()) {
+                // Mostrar anuncio antes de guardar
+                if (mInterstitialAd != null) {
+                    mInterstitialAd.show(AddReportActivity.this);
+                    // Guardar después de mostrar el anuncio
+                    mInterstitialAd.setFullScreenContentCallback(new com.google.android.gms.ads.FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            // Este método se llama cuando el usuario cierra el anuncio
+                            enviarReporte();
+                            finish();
+                        }
+                    });
+                } else {
+                    // Si no hay anuncio, guardar directamente
+                    enviarReporte();
+                    finish();
+                }
+            }
+        });
+    }
+
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this, "ca-app-pub-3990292709910452~9205783398", adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError loadAdError) {
+                        mInterstitialAd = null;
+                        Log.d(TAG, "Error loading interstitial ad: " + loadAdError.getMessage());
+                    }
+                });
     }
 
     private void showImagePickerDialog() {
@@ -256,8 +319,6 @@ public class AddReportActivity extends AppCompatActivity {
     }
 
     private void enviarReporte() {
-        if (!validarFormulario()) return;
-
         String lugar = etLugar.getText().toString().trim();
         String explicacion = etExplicacion.getText().toString().trim();
         int calificacion = (int) ratingBar.getRating();
@@ -278,7 +339,6 @@ public class AddReportActivity extends AppCompatActivity {
         long reportId = dbHelper.addReport(userId, lugar, calificacion, explicacion, imagePathsString);
         if (reportId != -1) {
             Toast.makeText(this, "Reporte guardado localmente", Toast.LENGTH_SHORT).show();
-            finish();
         } else {
             Toast.makeText(this, "Error al guardar. Verifique logs.", Toast.LENGTH_SHORT).show();
         }

@@ -2,10 +2,13 @@ package com.example.androidapp.activities;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -22,6 +25,13 @@ import androidx.core.content.FileProvider;
 import com.example.androidapp.R;
 import com.example.androidapp.database.DatabaseHelper;
 import com.example.androidapp.services.LocationHelper;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.initialization.InitializationStatus;
+import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.ads.interstitial.InterstitialAd;
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 import com.google.android.gms.location.LocationServices;
 import com.squareup.picasso.Picasso;
 
@@ -44,6 +54,7 @@ public class AddReminderActivity extends AppCompatActivity {
     private RadioGroup rgLocationType;
     private Button btnAddImage, btnSaveReminder;
     private ImageView ivImagePreview;
+    private RadioGroup rgRepeatType;
 
     private double latitude = 0;
     private double longitude = 0;
@@ -52,10 +63,29 @@ public class AddReminderActivity extends AppCompatActivity {
     private int userId;
     private Uri photoUri;
 
+    // Variables para anuncios
+    private AdView mAdView;
+    private InterstitialAd mInterstitialAd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_reminder);
+
+        // Inicializar AdMob
+        MobileAds.initialize(this, new OnInitializationCompleteListener() {
+            @Override
+            public void onInitializationComplete(InitializationStatus initializationStatus) {
+            }
+        });
+
+        // Cargar banner
+        mAdView = findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
+        // Cargar anuncio intersticial
+        loadInterstitialAd();
 
         userId = getUserId();
 
@@ -65,9 +95,55 @@ public class AddReminderActivity extends AppCompatActivity {
         btnAddImage = findViewById(R.id.btnAddImage);
         btnSaveReminder = findViewById(R.id.btnSaveReminder);
         ivImagePreview = findViewById(R.id.ivImagePreview);
+        rgRepeatType = findViewById(R.id.rgRepeatType);
 
         btnAddImage.setOnClickListener(v -> showImagePickerDialog());
-        btnSaveReminder.setOnClickListener(v -> saveReminder());
+        btnSaveReminder.setOnClickListener(v -> {
+            if (validarFormulario()) {
+                // Mostrar anuncio antes de guardar
+                if (mInterstitialAd != null) {
+                    mInterstitialAd.show(AddReminderActivity.this);
+                    // Guardar después de mostrar el anuncio
+                    mInterstitialAd.setFullScreenContentCallback(new com.google.android.gms.ads.FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            // Este método se llama cuando el usuario cierra el anuncio
+                            saveReminder();
+                        }
+                    });
+                } else {
+                    // Si no hay anuncio, guardar directamente
+                    saveReminder();
+                }
+            }
+        });
+    }
+
+    private void loadInterstitialAd() {
+        AdRequest adRequest = new AdRequest.Builder().build();
+
+        InterstitialAd.load(this, "ca-app-pub-3990292709910452~9205783398", adRequest,
+                new InterstitialAdLoadCallback() {
+                    @Override
+                    public void onAdLoaded(@NonNull InterstitialAd interstitialAd) {
+                        mInterstitialAd = interstitialAd;
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(@NonNull com.google.android.gms.ads.LoadAdError loadAdError) {
+                        mInterstitialAd = null;
+                        Log.d("AddReminderActivity", "Error loading interstitial ad: " + loadAdError.getMessage());
+                    }
+                });
+    }
+
+    private boolean validarFormulario() {
+        String title = etTitle.getText().toString().trim();
+        if (title.isEmpty()) {
+            Toast.makeText(this, "Ingrese un título", Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
     }
 
     private void showImagePickerDialog() {
@@ -150,7 +226,7 @@ public class AddReminderActivity extends AppCompatActivity {
                 // Imagen capturada con la cámara
                 if (imagePath != null) {
                     Picasso.get().load(new File(imagePath)).into(ivImagePreview);
-                    ivImagePreview.setVisibility(android.view.View.VISIBLE);
+                    ivImagePreview.setVisibility(View.VISIBLE);
                 }
             } else if (requestCode == REQUEST_IMAGE_GALLERY) {
                 // Imagen seleccionada de la galería
@@ -160,7 +236,7 @@ public class AddReminderActivity extends AppCompatActivity {
                         // Obtener la ruta real del archivo
                         imagePath = getRealPathFromURI(selectedImageUri);
                         Picasso.get().load(new File(imagePath)).into(ivImagePreview);
-                        ivImagePreview.setVisibility(android.view.View.VISIBLE);
+                        ivImagePreview.setVisibility(View.VISIBLE);
                     } catch (Exception e) {
                         Toast.makeText(this, "Error al cargar la imagen", Toast.LENGTH_SHORT).show();
                     }
@@ -212,15 +288,9 @@ public class AddReminderActivity extends AppCompatActivity {
         }
     }
 
-    // El resto de los métodos permanecen igual...
     private void saveReminder() {
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
-
-        if (title.isEmpty()) {
-            Toast.makeText(this, "Ingrese un título", Toast.LENGTH_SHORT).show();
-            return;
-        }
 
         int selectedId = rgLocationType.getCheckedRadioButtonId();
 
@@ -271,15 +341,23 @@ public class AddReminderActivity extends AppCompatActivity {
         String title = etTitle.getText().toString().trim();
         String description = etDescription.getText().toString().trim();
 
+        // Obtener el tipo de repetición seleccionado
+        int repeatType = 0; // Por defecto: una vez
+        int selectedRepeatId = rgRepeatType.getCheckedRadioButtonId();
+        if (selectedRepeatId == R.id.rbRepeat) {
+            repeatType = 1; // Cada vez
+        }
+
         DatabaseHelper dbHelper = new DatabaseHelper(this);
-        long reminderId = dbHelper.addReminder(userId, title, description, latitude, longitude, radius, imagePath);
+        long reminderId = dbHelper.addReminder(userId, title, description, latitude,
+                longitude, radius, imagePath, repeatType);
         dbHelper.close();
 
         if (reminderId != -1) {
             Toast.makeText(this, "Recordatorio creado", Toast.LENGTH_SHORT).show();
 
             // Iniciar monitoreo de ubicación
-            LocationHelper.startLocationMonitoring(this, reminderId, latitude, longitude, radius, title);
+            LocationHelper.startLocationMonitoring(this, reminderId, latitude, longitude, radius, title, repeatType);
 
             finish();
         } else {
@@ -288,7 +366,7 @@ public class AddReminderActivity extends AppCompatActivity {
     }
 
     private int getUserId() {
-        android.content.SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        SharedPreferences prefs = getSharedPreferences("user_prefs", MODE_PRIVATE);
         return prefs.getInt("user_id", -1);
     }
 }

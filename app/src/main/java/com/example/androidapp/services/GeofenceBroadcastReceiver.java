@@ -19,10 +19,8 @@ import com.google.android.gms.location.GeofencingEvent;
 import java.util.List;
 
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
-
     private static final String CHANNEL_ID = "location_reminder_channel";
     private static final int NOTIFICATION_ID = 1;
-    private static final int DATABASE_VERSION = 4;
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -32,12 +30,17 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         }
 
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
-        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
+
+        // Manejar tanto ENTER como DWELL events
+        if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER ||
+                geofenceTransition == Geofence.GEOFENCE_TRANSITION_DWELL) {
+
             List<Geofence> triggeringGeofences = geofencingEvent.getTriggeringGeofences();
 
             for (Geofence geofence : triggeringGeofences) {
                 String title = intent.getStringExtra("title");
                 String reminderId = intent.getStringExtra("reminder_id");
+                int repeatType = intent.getIntExtra("repeat_type", 0);
 
                 if (title == null) {
                     title = "Recordatorio de ubicación";
@@ -48,15 +51,23 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
                 Cursor cursor = dbHelper.getReminderById(reminderId);
 
                 if (cursor != null && cursor.moveToFirst()) {
-                    // Usar DatabaseHelper.COLUMN_DESCRIPTION en lugar de COLUMN_DESCRIPTION
                     String description = cursor.getString(
                             cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_DESCRIPTION)
                     );
-                    showNotification(context, title, description);
+
+                    // Mostrar notificación con ID único para cada recordatorio
+                    showNotification(context, title, description, Integer.parseInt(reminderId));
+
+                    // Si es de una sola vez, eliminar el recordatorio después de mostrar la notificación
+                    if (repeatType == 0) {
+                        LocationHelper.removeGeofence(context, Long.parseLong(reminderId));
+                        dbHelper.deleteReminder(Long.parseLong(reminderId));
+                    }
+
                     cursor.close();
                 } else {
                     // Si no se encuentra en BD, mostrar notificación básica
-                    showNotification(context, title, "Has llegado a la ubicación programada");
+                    showNotification(context, title, "Has llegado a la ubicación programada", Integer.parseInt(reminderId));
                 }
 
                 dbHelper.close();
@@ -64,7 +75,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         }
     }
 
-    private void showNotification(Context context, String title, String description) {
+    private void showNotification(Context context, String title, String description, int notificationId) {
         createNotificationChannel(context);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
@@ -83,7 +94,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
         NotificationManager notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.notify(NOTIFICATION_ID, builder.build());
+        notificationManager.notify(notificationId, builder.build());
     }
 
     private void createNotificationChannel(Context context) {
@@ -94,6 +105,8 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
+            channel.enableVibration(true);
+            channel.setVibrationPattern(new long[]{0, 500, 250, 500});
 
             NotificationManager notificationManager =
                     (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);

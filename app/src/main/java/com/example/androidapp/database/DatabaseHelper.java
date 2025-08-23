@@ -13,7 +13,7 @@ import com.example.androidapp.models.User;
 public class DatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "DatabaseHelper";
     private static final String DATABASE_NAME = "app_database.db";
-    private static final int DATABASE_VERSION = 4; // versión con users, reports, reminders
+    private static final int DATABASE_VERSION = 5; // ✅ versión incrementada
 
     // Tabla de usuarios
     public static final String TABLE_USERS = "users";
@@ -42,6 +42,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public static final String COLUMN_RADIUS = "radius";
     public static final String COLUMN_IMAGE_PATH = "image_path";
     public static final String COLUMN_CREATED_AT = "created_at";
+    public static final String COLUMN_REPEAT_TYPE = "repeat_type"; // ✅ Nueva columna
 
     // Crear tabla de usuarios
     private static final String CREATE_TABLE_USERS =
@@ -65,17 +66,18 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                     + TABLE_USERS + "(" + COLUMN_USER_ID + ")"
                     + ");";
 
-    // Crear tabla de recordatorios
+    // Crear tabla de recordatorios (con repeat_type)
     private static final String CREATE_TABLE_REMINDERS =
             "CREATE TABLE " + TABLE_REMINDERS + "("
                     + COLUMN_REMINDER_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + COLUMN_REMINDER_USER_FK + " INTEGER NOT NULL,"
                     + COLUMN_TITLE + " TEXT NOT NULL,"
-                    + COLUMN_DESCRIPTION + " TEXT," // Nueva columna
+                    + COLUMN_DESCRIPTION + " TEXT,"
                     + COLUMN_LATITUDE + " REAL NOT NULL,"
                     + COLUMN_LONGITUDE + " REAL NOT NULL,"
                     + COLUMN_RADIUS + " REAL NOT NULL,"
                     + COLUMN_IMAGE_PATH + " TEXT,"
+                    + COLUMN_REPEAT_TYPE + " INTEGER DEFAULT 0," // ✅ 0 = una vez, 1 = cada vez
                     + COLUMN_CREATED_AT + " DATETIME DEFAULT CURRENT_TIMESTAMP,"
                     + "FOREIGN KEY(" + COLUMN_REMINDER_USER_FK + ") REFERENCES "
                     + TABLE_USERS + "(" + COLUMN_USER_ID + ")"
@@ -97,7 +99,6 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // Migraciones progresivas
@@ -108,8 +109,10 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(CREATE_TABLE_REPORTS);
         }
         if (oldVersion < 4) {
-            // Agregar columna description a la tabla reminders
-            db.execSQL("ALTER TABLE " + TABLE_REMINDERS + " ADD COLUMN description TEXT");
+            db.execSQL("ALTER TABLE " + TABLE_REMINDERS + " ADD COLUMN " + COLUMN_DESCRIPTION + " TEXT");
+        }
+        if (oldVersion < 5) {
+            db.execSQL("ALTER TABLE " + TABLE_REMINDERS + " ADD COLUMN " + COLUMN_REPEAT_TYPE + " INTEGER DEFAULT 0");
         }
         Log.d(TAG, "Base de datos actualizada a la versión " + newVersion);
     }
@@ -183,12 +186,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         return id;
     }
 
-    // ✅ Método para obtener lista de reportes de un usuario
     public Cursor getUserReports(int userId) {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.query(TABLE_REPORTS,
                 new String[]{
-                        COLUMN_REPORT_ID + " AS _id", // ✅ Añadir alias _id
+                        COLUMN_REPORT_ID + " AS _id",
                         COLUMN_PLACE,
                         COLUMN_RATING
                 },
@@ -197,12 +199,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 null, null, COLUMN_REPORT_ID + " DESC");
     }
 
-    // Método para obtener detalles de un reporte específico
     public Cursor getReportDetails(long reportId) {
         SQLiteDatabase db = this.getReadableDatabase();
         try {
             return db.query(TABLE_REPORTS,
-                    null, // Todas las columnas
+                    null,
                     COLUMN_REPORT_ID + " = ?",
                     new String[]{String.valueOf(reportId)},
                     null, null, null);
@@ -212,9 +213,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-
     // ==== CRUD RECORDATORIOS ====
-    public long addReminder(int userId, String title, String description, double latitude, double longitude, float radius, String imagePath) {
+    public long addReminder(int userId, String title, String description, double latitude,
+                            double longitude, float radius, String imagePath, int repeatType) {
         SQLiteDatabase db = this.getWritableDatabase();
         long id = -1;
         try {
@@ -226,7 +227,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             values.put(COLUMN_LONGITUDE, longitude);
             values.put(COLUMN_RADIUS, radius);
             values.put(COLUMN_IMAGE_PATH, imagePath);
-
+            values.put(COLUMN_REPEAT_TYPE, repeatType); // ✅ Nuevo campo
 
             id = db.insertOrThrow(TABLE_REMINDERS, null, values);
             Log.d(TAG, "Recordatorio agregado con ID: " + id);
@@ -242,7 +243,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         return db.query(TABLE_REMINDERS,
                 new String[]{
-                        COLUMN_REMINDER_ID + " AS _id", // ✅ Añadir alias requerido
+                        COLUMN_REMINDER_ID + " AS _id",
                         COLUMN_TITLE,
                         COLUMN_CREATED_AT
                 },
@@ -251,11 +252,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 null, null,
                 COLUMN_CREATED_AT + " DESC");
     }
+
     public Cursor getReminderById(String reminderId) {
         SQLiteDatabase db = this.getReadableDatabase();
         try {
             return db.query(TABLE_REMINDERS,
-                    null, // Todas las columnas
+                    null,
                     COLUMN_REMINDER_ID + " = ?",
                     new String[]{reminderId},
                     null, null, null);
@@ -264,7 +266,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
             return null;
         }
     }
-    // Método para eliminar un reporte por ID
+
+    // Eliminar reporte
     public boolean deleteReport(long reportId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {
@@ -279,7 +282,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    // Método para eliminar un recordatorio por ID
+    // Eliminar recordatorio
     public boolean deleteReminder(long reminderId) {
         SQLiteDatabase db = this.getWritableDatabase();
         try {
@@ -294,3 +297,4 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 }
+
