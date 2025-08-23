@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
@@ -74,13 +75,21 @@
             android:orientation="horizontal"
             android:padding="8dp"/>
 
+        <!-- Añadido: Banner de publicidad -->
+        <com.google.android.gms.ads.AdView
+            android:id="@+id/adView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:adSize="BANNER"
+            app:adUnitId="ca-app-pub-3990292709910452~9205783398"/>
+
         <Button
             android:id="@+id/btnEnviar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="16dp"
             android:text="Enviar Reporte"
             android:backgroundTint="@color/primaryColor"/>
-
     </LinearLayout>
 </ScrollView>

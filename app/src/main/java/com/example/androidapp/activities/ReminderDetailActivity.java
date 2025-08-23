@@ -67,14 +67,22 @@ public class ReminderDetailActivity extends AppCompatActivity {
             double latitude = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_LATITUDE));
             double longitude = cursor.getDouble(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_LONGITUDE));
             String imagePath = cursor.getString(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_IMAGE_PATH));
+            int repeatType = cursor.getInt(cursor.getColumnIndexOrThrow(DatabaseHelper.COLUMN_REPEAT_TYPE));
 
             TextView tvTitle = findViewById(R.id.tvTitle);
             TextView tvDescription = findViewById(R.id.tvDescription);
             TextView tvLocation = findViewById(R.id.tvLocation);
+            TextView tvRepeatType = findViewById(R.id.tvRepeatType);
             ImageView ivReminderImage = findViewById(R.id.ivReminderImage);
 
             tvTitle.setText(title);
             tvDescription.setText(description.isEmpty() ? "Sin descripción" : description);
+
+            // Mostrar tipo de repetición
+            if (tvRepeatType != null) {
+                String repeatText = (repeatType == 0) ? "Solo una vez" : "Cada vez que llegues";
+                tvRepeatType.setText(repeatText);
+            }
 
             // Obtener dirección a partir de las coordenadas
             String address = getAddressFromLocation(latitude, longitude);

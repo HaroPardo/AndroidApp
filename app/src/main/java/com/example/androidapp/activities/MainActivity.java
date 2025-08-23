@@ -1,14 +1,20 @@
 package com.example.androidapp.activities;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.example.androidapp.R;
 
@@ -17,6 +23,8 @@ import org.osmdroid.config.Configuration;
 import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int PERMISSION_REQUEST_CODE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +47,9 @@ public class MainActivity extends AppCompatActivity {
         Configuration.getInstance().setOsmdroidTileCache(tileCache);
 
         setContentView(R.layout.activity_main);
+
+        // Verificar permisos al iniciar
+        checkPermissions();
 
         Button btnLogout = findViewById(R.id.btnLogout);
         Button btnGoToReports = findViewById(R.id.btnGoToReports);
@@ -63,6 +74,31 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
             finish();
         });
+    }
+
+    private void checkPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION},
+                        PERMISSION_REQUEST_CODE);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso concedido
+                Toast.makeText(this, "Permiso de ubicación en segundo plano concedido", Toast.LENGTH_SHORT).show();
+            } else {
+                // Permiso denegado
+                Toast.makeText(this, "El permiso de ubicación en segundo plano es necesario para que los recordatorios funcionen correctamente", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     @Override
